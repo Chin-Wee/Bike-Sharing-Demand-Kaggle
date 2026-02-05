@@ -67,5 +67,4 @@ LEFT JOIN
     weather_external w ON date(t.datetime) = w.date
 LEFT JOIN 
     holidays_external h ON date(t.datetime) = h.date
-LEFT JOIN
-    disruptions d ON date(t.datetime) = d.date;
+

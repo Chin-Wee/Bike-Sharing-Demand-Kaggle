@@ -1,8 +1,8 @@
--- Data Augmentation & Feature Engineering Query
+-- Pure Data Retrieval & Join Query (Logic moved to Python)
 
 SELECT 
     t.*,
-    -- External Data
+    -- Weather External Data
     w.precipitation as external_precipitation,
     w.snowfall as external_snowfall,
     
@@ -66,4 +66,6 @@ FROM
 LEFT JOIN 
     weather_external w ON date(t.datetime) = w.date
 LEFT JOIN 
-    holidays_external h ON date(t.datetime) = h.date;
+    holidays_external h ON date(t.datetime) = h.date
+LEFT JOIN
+    disruptions d ON date(t.datetime) = d.date;

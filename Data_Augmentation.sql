@@ -1,82 +1,23 @@
--- Data Augmentation & Feature Engineering Query
+-- Pure Data Retrieval & Join Query (Logic moved to Python)
 
 SELECT 
     t.*,
-    -- External Data
+    -- Weather External Data
     w.precipitation as external_precipitation,
     w.snowfall as external_snowfall,
-    h.holiday_name as specific_holiday_name,
-    CASE WHEN h.holiday_name IS NOT NULL THEN 1 ELSE 0 END as is_federal_holiday,
     
-    -- 0. External Events (Disasters & Transit Disruptions)
-    CASE 
-        WHEN date(t.datetime) IN ('2011-01-26', '2011-01-27', '2011-08-27', '2011-08-28', '2012-10-29', '2012-10-30') THEN 1 
-        ELSE 0 
-    END as is_disaster,
-
-    CASE 
-        WHEN date(t.datetime) IN (
-            -- MLK Weekend (Track Work)
-            '2011-01-14', '2011-01-15', '2011-01-16', '2011-01-17',
-            -- Presidents Day (Track Work)
-            '2011-02-18', '2011-02-19', '2011-02-20', '2011-02-21',
-            -- Memorial Day (Track Work)
-            '2011-05-27', '2011-05-28', '2011-05-29', '2011-05-30',
-            -- Earthquake (Rail speed restricted)
-            '2011-08-23', '2011-08-24', '2011-08-25',
-            -- Red Line Work
-            '2011-08-06', '2011-08-07',
-            -- Orange/Red Line Work
-            '2012-02-17', '2012-02-18', '2012-02-19', '2012-02-20',
-            -- Derecho Storm / Orange Line Work (Merged period)
-            '2012-06-29', '2012-06-30', '2012-07-01', '2012-07-02',
-            -- Orange Line Work (Late Aug)
-            '2012-08-24', '2012-08-25', '2012-08-26'
-        ) THEN 1 
-        ELSE 0 
-    END as transport_disruption,
-
-    -- 1. Basic Temporal (SQLite strftime returns strings)
-    CAST(strftime('%H', t.datetime) as INTEGER) as hour,
-    CAST(strftime('%m', t.datetime) as INTEGER) as month,
-    CAST(strftime('%Y', t.datetime) as INTEGER) as year,
-    CAST(strftime('%w', t.datetime) as INTEGER) as dayofweek, -- 0=Sunday, 6=Saturday
-
-    -- 2. Time Bins (0-5: 0, 6-11: 1, 12-17: 2, 18-23: 3)
-    CASE 
-        WHEN CAST(strftime('%H', t.datetime) as INTEGER) BETWEEN 0 AND 5 THEN 0
-        WHEN CAST(strftime('%H', t.datetime) as INTEGER) BETWEEN 6 AND 11 THEN 1
-        WHEN CAST(strftime('%H', t.datetime) as INTEGER) BETWEEN 12 AND 17 THEN 2
-        ELSE 3 
-    END as time_bin,
-
-    -- 3. Peak Hours (7-9 or 17-19 on working days)
-    CASE 
-        WHEN (
-            (CAST(strftime('%H', t.datetime) as INTEGER) BETWEEN 7 AND 9) OR 
-            (CAST(strftime('%H', t.datetime) as INTEGER) BETWEEN 17 AND 19)
-        ) AND t.workingday = 1 THEN 1
-        ELSE 0
-    END as is_peak,
-
-    -- 4. Weekend (Saturday(6) or Sunday(0))
-    CASE 
-        WHEN CAST(strftime('%w', t.datetime) as INTEGER) IN (0, 6) THEN 1
-        ELSE 0
-    END as is_weekend,
-
-    -- 5. Domain Interactions
-    CASE WHEN t.weather >= 3 THEN 1 ELSE 0 END as bad_weather,
-    (t.temp * t.humidity) as humid_temp,
-    (t.windspeed * t.weather) as wind_weather,
-
-    -- 6. Cyclical Hour (Requires sin/cos UDFs in Python)
-    sin(2 * 3.14159265359 * CAST(strftime('%H', t.datetime) as INTEGER) / 24.0) as hour_sin,
-    cos(2 * 3.14159265359 * CAST(strftime('%H', t.datetime) as INTEGER) / 24.0) as hour_cos
+    -- Holiday Data
+    h.holiday_name as specific_holiday_name,
+    
+    -- Disruption Data (Joined from CSV)
+    d.event_type as disruption_event_type,
+    d.description as disruption_description
 
 FROM 
     train t
 LEFT JOIN 
     weather_external w ON date(t.datetime) = w.date
 LEFT JOIN 
-    holidays_external h ON date(t.datetime) = h.date;
+    holidays_external h ON date(t.datetime) = h.date
+LEFT JOIN
+    disruptions d ON date(t.datetime) = d.date;

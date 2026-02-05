@@ -72,19 +72,7 @@ SELECT
 
     -- 6. Cyclical Hour (Requires sin/cos UDFs in Python)
     sin(2 * 3.14159265359 * CAST(strftime('%H', t.datetime) as INTEGER) / 24.0) as hour_sin,
-    cos(2 * 3.14159265359 * CAST(strftime('%H', t.datetime) as INTEGER) / 24.0) as hour_cos,
-
-    -- 7. One-Hot Encoding: Season (1:Spring, 2:Summer, 3:Fall, 4:Winter)
-    CASE WHEN t.season = 1 THEN 1 ELSE 0 END as season_1,
-    CASE WHEN t.season = 2 THEN 1 ELSE 0 END as season_2,
-    CASE WHEN t.season = 3 THEN 1 ELSE 0 END as season_3,
-    CASE WHEN t.season = 4 THEN 1 ELSE 0 END as season_4,
-
-    -- 7. One-Hot Encoding: Weather (1:Clear, 2:Mist, 3:Light Rain, 4:Heavy Rain)
-    CASE WHEN t.weather = 1 THEN 1 ELSE 0 END as weather_1,
-    CASE WHEN t.weather = 2 THEN 1 ELSE 0 END as weather_2,
-    CASE WHEN t.weather = 3 THEN 1 ELSE 0 END as weather_3,
-    CASE WHEN t.weather = 4 THEN 1 ELSE 0 END as weather_4
+    cos(2 * 3.14159265359 * CAST(strftime('%H', t.datetime) as INTEGER) / 24.0) as hour_cos
 
 FROM 
     train t
